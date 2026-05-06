@@ -118,10 +118,6 @@ else()
     add_library(${SFEMOVIE_LIB} SHARED ${SOURCE_FILES} ${HEADER_FILES})
 endif()
 
-if (NeedsFFmpegCompilation)
-    add_dependencies(${SFEMOVIE_LIB} FFmpeg)
-endif()
-
 # Define the libraries sfeMovie should link against
 if (SFEMOVIE_BUILD_STATIC)
     set_target_properties(${SFEMOVIE_LIB} PROPERTIES
@@ -130,12 +126,13 @@ if (SFEMOVIE_BUILD_STATIC)
     message(WARNING "You chose to build a static library of sfeMovie, this assumes that you will also statically link your software against SFML."
             "sfeMovie will be built with SFML_STATIC defined.")
 else()
-    set(SFEMOVIE_LIBRARIES ${SFML_LIBRARIES} ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES} ${SFML_DEPENDENCIES})
+    set(SFEMOVIE_LIBRARIES ${SFML_LIBRARIES} ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES} SFML::Graphics SFML::Audio)
     if (SFEMOVIE_ENABLE_ASS_SUBTITLES)
         set(SFEMOVIE_LIBRARIES ${SFEMOVIE_LIBRARIES} ${LIBASS_LIBRARIES})
     endif()
     message(STATUS "Link sfeMovie against: ${LIBASS_LIBRARIES} ${SFML_LIBRARIES} ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES} ${SFML_DEPENDENCIES}")
     target_link_libraries(${SFEMOVIE_LIB} PRIVATE ${SFEMOVIE_LIBRARIES})
+    target_link_directories(${SFEMOVIE_LIB} PRIVATE ${FFMPEG_LIBRARY_DIRS})
 endif()
 
 include (${CMAKE_CURRENT_LIST_DIR}/cmake/Properties.cmake)

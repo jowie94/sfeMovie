@@ -41,6 +41,10 @@ else()
         ${SFEMOVIE_LIB}
         ${SFML_LIBRARIES}
         ${SFML_DEPENDENCIES}
+        SFML::Graphics
+        SFML::Window
+        SFML::System
+        SFML::Audio
     )
 endif()
 
