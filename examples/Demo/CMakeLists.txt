@@ -30,12 +30,11 @@ if (SFEMOVIE_BUILD_STATIC)
         ${SFEMOVIE_LIB}
         ${FFMPEG_LIBRARIES}
         ${OTHER_LIBRARIES}
-        ${SFML_LIBRARIES}
         SFML::Graphics
         SFML::Window
         SFML::System
         SFML::Audio
-        ${SFML_DEPENDENCIES})
+    )
 else()
     target_link_libraries(
         ${SFEMOVIE_DEMO}

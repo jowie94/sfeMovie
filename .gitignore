@@ -6,3 +6,5 @@ SourceDir.var
 BuildDir.var
 YasmPath.var
 ci-output/
+/.idea
+cmake-build-*/

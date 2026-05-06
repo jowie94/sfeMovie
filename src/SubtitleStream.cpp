@@ -317,7 +317,7 @@ namespace sfe
                 
                 textures.emplace_back();
                 auto& texture = textures.back();
-                texture.resize(sf::Vector2u(subItem->w, subItem->h));
+                CHECK(texture.resize(sf::Vector2u(subItem->w, subItem->h)), "SubtitleStream() - sf::Texture::resize() error");
                 texture.setSmooth(true);
                 
                 std::unique_ptr<uint32_t[]> data(new uint32_t[subItem->w * subItem->h]);

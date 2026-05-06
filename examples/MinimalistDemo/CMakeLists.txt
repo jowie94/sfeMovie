@@ -28,8 +28,7 @@ if (SFEMOVIE_BUILD_STATIC)
         SFML::Window
         SFML::System
         SFML::Audio
-        ${SFML_LIBRARIES}
-        ${SFML_DEPENDENCIES})
+    )
 else()
     target_link_libraries(
         ${SFEMOVIE_MINIMALIST_DEMO}

@@ -148,7 +148,10 @@ if (SFEMOVIE_BUILD_UNIT_TESTS)
 endif()
 
 # Examples building
-add_subdirectory(examples)
+set(SFEMOVIE_BUILD_EXAMPLES FALSE CACHE BOOL "True to build examples")
+if(SFEMOVIE_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 # add an option for building the documentation
 set(SFEMOVIE_BUILD_DOC FALSE CACHE BOOL "Set to true to build the documentation, requires Doxygen")
