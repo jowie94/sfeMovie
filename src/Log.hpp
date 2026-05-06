@@ -27,6 +27,7 @@
 
 #include <string>
 #include <sstream>
+#include <SFML/Audio/SoundSource.hpp>
 
 #ifdef _MSC_VER
 #define FUNC_NAME __FUNCTION__
@@ -87,6 +88,17 @@ namespace sfe
         std::ostringstream ss;
         ss << obj;
         return ss.str();
+    }
+    
+    inline std::string s(sf::SoundSource::Status status)
+    {
+        switch (status)
+        {
+            case sf::SoundSource::Status::Playing: return "Playing";
+            case sf::SoundSource::Status::Paused:  return "Paused";
+            case sf::SoundSource::Status::Stopped: return "Stopped";
+        }
+        return "Unknown";
     }
 };
 

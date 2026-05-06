@@ -1,6 +1,6 @@
 
-cmake_minimum_required (VERSION 2.8.12)
-
+cmake_minimum_required (VERSION 3.21)
+set(CMAKE_CXX_STANDARD 26)
 
 # set a default build type if none was provided
 # this has to be done before the project() instruction!
@@ -23,9 +23,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
 
 # Import required CMake files
-set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
-include(${CMAKE_SOURCE_DIR}/Shell.cmake)
-include(${CMAKE_SOURCE_DIR}/FFmpeg/FFmpeg.cmake)
+set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules")
+include(${CMAKE_CURRENT_LIST_DIR}/Shell.cmake)
 
 # Detect the OS
 if(${CMAKE_HOST_WIN32})
@@ -45,7 +44,7 @@ endif()
 
 # Set some env vars
 set (SFEMOVIE_LIB sfeMovie)
-set (VERSION_MAJOR 2)
+set (VERSION_MAJOR 3)
 set (VERSION_MINOR 0)
 
 set (SOURCES_DIR "src")
@@ -54,29 +53,14 @@ set (PRIVATE_HEADERS "src")
 set (OTHER_LIBRARIES "")
 set (LINKER_FLAGS "")
 
-if (MSVC)
-    if(MSVC_VERSION LESS 1800) # 1700 = VS 2013
-        message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-    endif()
-else()
-    include(CheckCXXCompilerFlag)
-    CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-    CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-    if(COMPILER_SUPPORTS_CXX11)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    elseif(COMPILER_SUPPORTS_CXX0X)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-    else()
-        message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-    endif()
-endif()
-
 #################################################################################################################
 # ============================================== FFMPEG SETUP ================================================= #
 #################################################################################################################
 
-set (SFEMOVIE_BUILD_FFMPEG TRUE CACHE BOOL "TRUE to build sfeMovie with the provided FFmpeg sources, FALSE to build with the system libraries")
-add_subdirectory(FFmpeg)
+find_package(FFMPEG REQUIRED)
+if ("${FFMPEG_FOUND}" STREQUAL "NO")
+    message(FATAL_ERROR "Could not find a full FFmpeg installation")
+endif()
 
 #################################################################################################################
 # ============================================== LIBASS SETUP ================================================= #
@@ -101,7 +85,7 @@ if (SFEMOVIE_BUILD_STATIC)
     set (SFML_STATIC_LIBRARIES TRUE)
 endif()
 
-find_package (SFML 2.3 COMPONENTS graphics window system audio REQUIRED)
+find_package (SFML 3 COMPONENTS Graphics Window System Audio REQUIRED CONFIG)
 message(STATUS "SFML libraries: ${SFML_LIBRARIES}")
 message(STATUS "Additional dependencies: ${SFML_DEPENDENCIES}")
 
@@ -154,33 +138,8 @@ else()
     target_link_libraries(${SFEMOVIE_LIB} PRIVATE ${SFEMOVIE_LIBRARIES})
 endif()
 
-if (SFEMOVIE_BUILD_FFMPEG)
-    if (LINUX)
-        add_custom_command(TARGET ${SFEMOVIE_LIB} PRE_LINK
-            COMMAND cp -R
-                "${CMAKE_BINARY_DIR}/FFmpeg-binaries/lib/*"
-                "$<TARGET_FILE_DIR:${SFEMOVIE_LIB}>")
-    elseif(MACOSX)
-        add_custom_command(TARGET ${SFEMOVIE_LIB} PRE_LINK
-            COMMAND mkdir -p "$<TARGET_FILE_DIR:${SFEMOVIE_LIB}>/Libraries")
-        add_custom_command(TARGET ${SFEMOVIE_LIB} PRE_LINK
-            COMMAND cp -R
-                "${CMAKE_BINARY_DIR}/FFmpeg-binaries/lib/*"
-                "$<TARGET_FILE_DIR:${SFEMOVIE_LIB}>/Libraries")
-    elseif(WINDOWS)
-        add_custom_command(TARGET ${SFEMOVIE_LIB} PRE_LINK
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${CMAKE_BINARY_DIR}/FFmpeg-binaries/lib"
-                "$<TARGET_FILE_DIR:${SFEMOVIE_LIB}>")
-        add_custom_command(TARGET ${SFEMOVIE_LIB} PRE_LINK
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                "${CMAKE_BINARY_DIR}/FFmpeg-binaries/bin"
-                "$<TARGET_FILE_DIR:${SFEMOVIE_LIB}>")
-    endif()
-endif()
-
-include (${CMAKE_SOURCE_DIR}/cmake/Properties.cmake)
-include (${CMAKE_SOURCE_DIR}/cmake/Install.cmake)
+include (${CMAKE_CURRENT_LIST_DIR}/cmake/Properties.cmake)
+include (${CMAKE_CURRENT_LIST_DIR}/cmake/Install.cmake)
 
 # Unit tests
 set (SFEMOVIE_BUILD_UNIT_TESTS FALSE CACHE BOOL "TRUE to build the unit test system, requires Boost")
@@ -198,4 +157,4 @@ if(SFEMOVIE_BUILD_DOC)
 endif()
 
 # Define packaging
-include(${CMAKE_SOURCE_DIR}/cmake/Packaging.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/Packaging.cmake)

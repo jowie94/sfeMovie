@@ -28,6 +28,7 @@
 
 #include "Macros.hpp"
 #include "Stream.hpp"
+#include <libavcodec/avcodec.h>
 #include <SFML/Graphics.hpp>
 #include <list>
 #include <utility>

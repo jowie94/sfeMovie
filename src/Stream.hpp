@@ -29,12 +29,14 @@
 #include "Timer.hpp"
 #include <list>
 #include <memory>
+#include <mutex>
 #include <SFML/System.hpp>
 #include <sfeMovie/Movie.hpp>
 
 extern "C"
 {
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
 }
 
 namespace sfe
@@ -187,12 +189,13 @@ namespace sfe
         
         DataSource& m_dataSource;
         std::shared_ptr<Timer> m_timer;
-        AVCodec* m_codec;
+        const AVCodec* m_codec;
+        AVCodecContext* m_codecCtx;
         int m_streamID;
         std::string m_language;
         std::list <AVPacket*> m_packetList;
         Status m_status;
-        sf::Mutex m_readerMutex;
+        std::recursive_mutex m_readerMutex;
     };
 }
 

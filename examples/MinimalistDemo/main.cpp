@@ -28,6 +28,7 @@
 #include <sfeMovie/Movie.hpp>
 #include <iostream>
 #include <algorithm>
+#include <optional>
 
 
 /*
@@ -66,8 +67,8 @@ int main(int argc, const char *argv[])
     }
     
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
-    float width = std::min(static_cast<float>(desktopMode.width), movie.getSize().x);
-    float height = std::min(static_cast<float>(desktopMode.height), movie.getSize().y);
+    float width = std::min(static_cast<float>(desktopMode.size.x), movie.getSize().x);
+    float height = std::min(static_cast<float>(desktopMode.size.y), movie.getSize().y);
     
     // For audio files, there is no frame size, set a minimum:
     if (width * height < 1.f)
@@ -77,7 +78,7 @@ int main(int argc, const char *argv[])
     }
 
     // Create window
-    sf::RenderWindow window(sf::VideoMode(width, height), "sfeMovie Player",
+    sf::RenderWindow window(sf::VideoMode(sf::Vector2u{static_cast<unsigned int>(width), static_cast<unsigned int>(height)}), "sfeMovie Player",
                             sf::Style::Close | sf::Style::Resize);
     
     // Scale movie to the window drawing area and enable VSync
@@ -89,38 +90,26 @@ int main(int argc, const char *argv[])
     
     while (window.isOpen())
     {
-        sf::Event ev;
-        while (window.pollEvent(ev))
-        {
-            // Window closure
-            if (ev.type == sf::Event::Closed ||
-                (ev.type == sf::Event::KeyPressed &&
-                 ev.key.code == sf::Keyboard::Escape))
-            {
-                window.close();
-            }
-            
-            if (ev.type == sf::Event::KeyPressed)
-            {
-                switch (ev.key.code)
-                {
-                    case sf::Keyboard::Space:
-                        if (movie.getStatus() == sfe::Playing)
-                            movie.pause();
-                        else
-                            movie.play();
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else if (ev.type == sf::Event::Resized)
-            {
-                movie.fit(0, 0, window.getSize().x, window.getSize().y);
-                window.setView(sf::View(sf::FloatRect(0, 0, (float)window.getSize().x, (float)window.getSize().y)));
-            }
-        }
-        
+        window.handleEvents([&](const sf::Event::Closed&) { window.close(); },
+                            [&](const sf::Event::KeyPressed& keyEvent)
+                            {
+                                if (keyEvent.code == sf::Keyboard::Key::Escape)
+                                {
+                                    window.close();
+                                }
+                                else if (keyEvent.code == sf::Keyboard::Key::Space)
+                                {
+                                    if (movie.getStatus() == sfe::Playing)
+                                        movie.pause();
+                                    else
+                                        movie.play();
+                                }
+                            },
+                            [&](const sf::Event::Resized& resizeEvent)
+                            {
+                                movie.fit(0, 0, resizeEvent.size.x, resizeEvent.size.y);
+                                window.setView(sf::View(sf::FloatRect({0, 0}, {static_cast<float>(resizeEvent.size.x), static_cast<float>(resizeEvent.size.y)})));
+                            });
         movie.update();
         
         // Render movie

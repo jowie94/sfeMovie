@@ -46,8 +46,6 @@ namespace sfe
     
     static void loadFFmpeg()
     {
-        ONCE(av_register_all());
-        ONCE(avcodec_register_all());
         ONCE(Log::initialize());
     }
     
@@ -64,17 +62,18 @@ namespace sfe
     
     const std::list<Demuxer::DemuxerInfo>& Demuxer::getAvailableDemuxers()
     {
-        AVInputFormat* demuxer = nullptr;
         loadFFmpeg();
         
         if (g_availableDemuxers.empty())
         {
-            while (nullptr != (demuxer = av_iformat_next(demuxer)))
+            void* demuxer_opaque = nullptr;
+            const AVInputFormat* demuxer = nullptr;
+            while (nullptr != (demuxer = av_demuxer_iterate(&demuxer_opaque)))
             {
                 DemuxerInfo info =
                 {
                     std::string(demuxer->name),
-                    std::string(demuxer->long_name)
+                    demuxer->long_name ? std::string(demuxer->long_name) : std::string()
                 };
                 
                 g_availableDemuxers.push_back(info);
@@ -86,17 +85,18 @@ namespace sfe
     
     const std::list<Demuxer::DecoderInfo>& Demuxer::getAvailableDecoders()
     {
-        AVCodec* codec = nullptr;
         loadFFmpeg();
         
         if (g_availableDecoders.empty())
         {
-            while (nullptr != (codec = av_codec_next(codec)))
+            void* codec_opaque = nullptr;
+            const AVCodec* codec = nullptr;
+            while (nullptr != (codec = av_codec_iterate(&codec_opaque)))
             {
                 DecoderInfo info =
                 {
                     avcodec_get_name(codec->id),
-                    codec->long_name,
+                    codec->long_name ? codec->long_name : "",
                     AVMediaTypeToMediaType(codec->type)
                 };
                 
@@ -155,7 +155,7 @@ namespace sfe
             {
                 std::shared_ptr<Stream> stream;
                 
-                switch (ffstream->codec->codec_type)
+                switch (ffstream->codecpar->codec_type)
                 {
                     case AVMEDIA_TYPE_VIDEO:
                         stream = std::make_shared<VideoStream>(m_formatCtx, ffstream, *this, timer, videoDelegate);
@@ -165,7 +165,7 @@ namespace sfe
                             extractDurationFromStream(ffstream);
                         }
                         
-                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codec->codec_id) + " video stream");
+                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codecpar->codec_id) + " video stream");
                         break;
                         
                     case AVMEDIA_TYPE_AUDIO:
@@ -176,12 +176,12 @@ namespace sfe
                             extractDurationFromStream(ffstream);
                         }
                         
-                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codec->codec_id) + " audio stream");
+                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codecpar->codec_id) + " audio stream");
                         break;
                     case AVMEDIA_TYPE_SUBTITLE:
                         stream = std::make_shared<SubtitleStream>(m_formatCtx, ffstream, *this, timer, subtitleDelegate);
                         
-                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codec->codec_id) + " subtitle stream");
+                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codecpar->codec_id) + " subtitle stream");
                         break;
                     default:
                         m_ignoredStreams[ffstream->index] = Stream::AVStreamDescription(ffstream);
@@ -407,7 +407,7 @@ namespace sfe
     {
         CHECK(! stream.isPassive(), "Internal inconcistency - Cannot feed a passive stream");
         
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         
         while ((!didReachEndOfFile() || hasPendingDataForStream(stream)) && stream.needsMoreData())
         {
@@ -426,8 +426,7 @@ namespace sfe
             {
                 if (!distributePacket(pkt, stream))
                 {
-                    av_free_packet(pkt);
-                    av_free(pkt);
+                    av_packet_free(&pkt);
                 }
             }
         }
@@ -471,22 +470,19 @@ namespace sfe
     
     AVPacket* Demuxer::readPacket()
     {
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         
         AVPacket *pkt = nullptr;
         int err = 0;
         
-        pkt = (AVPacket *)av_malloc(sizeof(*pkt));
+        pkt = av_packet_alloc();
         CHECK(pkt, "Demuxer::readPacket() - out of memory");
-        av_init_packet(pkt);
         
         err = av_read_frame(m_formatCtx, pkt);
         
         if (err < 0)
         {
-            av_free_packet(pkt);
-            av_free(pkt);
-            pkt = nullptr;
+            av_packet_free(&pkt);
         }
         
         return pkt;
@@ -494,14 +490,13 @@ namespace sfe
     
     void Demuxer::flushBuffers()
     {
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         
         for (std::pair<const Stream*, std::list<AVPacket*> >&& pair : m_pendingDataForActiveStreams)
         {
             for (AVPacket* packet : pair.second)
             {
-                av_free_packet(packet);
-                av_free(packet);
+                av_packet_free(&packet);
             }
         }
         
@@ -510,7 +505,7 @@ namespace sfe
     
     void Demuxer::queueEncodedData(AVPacket* packet)
     {
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         
         std::set<std::shared_ptr<Stream>> connectedStreams = getSelectedStreams();
         
@@ -525,13 +520,12 @@ namespace sfe
         }
         
         sfeLogError("No stream can use the packet, destroying it");
-        av_free_packet(packet);
-        av_free(packet);
+        av_packet_free(&packet);
     }
     
     bool Demuxer::hasPendingDataForStream(const Stream& stream) const
     {
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         
         const std::map<const Stream*, std::list<AVPacket*> >::const_iterator it =
             m_pendingDataForActiveStreams.find(&stream);
@@ -544,7 +538,7 @@ namespace sfe
     
     AVPacket* Demuxer::gatherQueuedPacketForStream(Stream& stream)
     {
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         
         std::map<const Stream*, std::list<AVPacket*> >::iterator it
             = m_pendingDataForActiveStreams.find(&stream);
@@ -566,7 +560,7 @@ namespace sfe
     
     bool Demuxer::distributePacket(AVPacket* packet, Stream& stream)
     {
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         CHECK(packet, "Demuxer::distributePacket() - invalid argument");
         
         bool distributed = false;
@@ -612,7 +606,7 @@ namespace sfe
     {
         CHECK(! starvingStream.isPassive(), "Internal inconcistency - passive streams cannot request data");
         
-        sf::Lock l(m_synchronized);
+        std::lock_guard l(m_synchronized);
         feedStream(starvingStream);
     }
     

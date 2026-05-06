@@ -150,6 +150,7 @@ namespace sfe
         sf::Transformable& m_movieView;
         std::shared_ptr<Demuxer> m_demuxer;
         std::shared_ptr<Timer> m_timer;
+        sf::Texture m_emptyTexture;
         sf::Sprite m_videoSprite;
         std::list<sf::Sprite> m_subtitleSprites;
         Streams m_audioStreamsDesc;

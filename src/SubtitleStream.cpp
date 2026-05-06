@@ -104,7 +104,7 @@ namespace sfe
     m_track(nullptr)
 #endif
     {
-        const AVCodecDescriptor* desc = av_codec_get_codec_descriptor(m_stream->codec);
+        const AVCodecDescriptor* desc = avcodec_descriptor_get(m_stream->codecpar->codec_id);
         CHECK(desc != NULL, "Could not get the codec descriptor!");
         
         if((desc->props & AV_CODEC_PROP_BITMAP_SUB) == 0)
@@ -113,8 +113,8 @@ namespace sfe
             m_track    = ass_new_track(m_ass->library);
             CHECK(m_track, "Failed initializing ASS track");
             
-            ass_process_codec_private(m_track, reinterpret_cast<char*>(m_stream->codec->subtitle_header),
-                                      m_stream->codec->subtitle_header_size);
+            ass_process_codec_private(m_track, reinterpret_cast<char*>(m_codecCtx->subtitle_header),
+                                      m_codecCtx->subtitle_header_size);
 #else
             throw std::runtime_error("Non-bitmap subtitle stream detected but ASS support is disabled. Cannot use stream.");
 #endif
@@ -254,7 +254,7 @@ namespace sfe
                 bool needsMoreDecoding = false;
                 
                 CHECK(packet != nullptr, "inconsistency error");
-                goOn = avcodec_decode_subtitle2(m_stream->codec, &sub, &gotSub, packet);
+                goOn = avcodec_decode_subtitle2(m_codecCtx, &sub, &gotSub, packet);
                 
                 pts = 0;
                 if (packet->pts != AV_NOPTS_VALUE)
@@ -275,8 +275,7 @@ namespace sfe
                 }
                 else
                 {
-                    av_free_packet(packet);
-                    av_free(packet);
+                    av_packet_free(&packet);
                 }
                 
                 if (!gotSub && goOn)
@@ -305,31 +304,28 @@ namespace sfe
             if (subItem->type == SUBTITLE_BITMAP)
             {
                 type = BITMAP;
-                sprites.push_back(sf::Sprite());
-                textures.push_back(sf::Texture());
                 
-                sf::Sprite& sprite = sprites.back();
-                sf::Texture& texture = textures.back();
-                
-                CHECK(subItem->pict.data[0] != nullptr, "FFmpeg inconcistency error");
-                CHECK(subItem->pict.data[1] != nullptr, "FFmpeg inconcistency error");
+                CHECK(subItem->data[0] != nullptr, "FFmpeg inconcistency error");
+                CHECK(subItem->data[1] != nullptr, "FFmpeg inconcistency error");
                 CHECK(subItem->w * subItem->h > 0, "FFmpeg inconcistency error");
                 
                 positions.push_back(sf::Vector2i(subItem->x, subItem->y));
                 
                 std::unique_ptr<uint32_t[]> palette(new uint32_t[subItem->nb_colors]);
                 for (int j = 0; j < subItem->nb_colors; j++)
-                    palette[j] = *(uint32_t*)&subItem->pict.data[1][j * RGBASize];
+                    palette[j] = *(uint32_t*)&subItem->data[1][j * RGBASize];
                 
-                texture.create(subItem->w, subItem->h);
+                textures.emplace_back();
+                auto& texture = textures.back();
+                texture.resize(sf::Vector2u(subItem->w, subItem->h));
                 texture.setSmooth(true);
                 
-                std::unique_ptr<uint32_t[]> data(new uint32_t[subItem->w* sub->rects[i]->h]);
+                std::unique_ptr<uint32_t[]> data(new uint32_t[subItem->w * subItem->h]);
                 for (int j = 0; j < subItem->w * subItem->h; ++j)
-                    data[j] = palette[subItem->pict.data[0][j]];
+                    data[j] = palette[subItem->data[0][j]];
                 
                 texture.update((uint8_t*)data.get());
-                sprite.setTexture(texture);
+                sprites.emplace_back(texture);
                 
                 succeeded = true;
             }

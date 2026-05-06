@@ -260,7 +260,7 @@ namespace sfe
         bool m_eofReached;
         std::map<int, std::shared_ptr<Stream> > m_streams;
         std::map<int, std::string> m_ignoredStreams;
-        mutable sf::Mutex m_synchronized;
+        mutable std::recursive_mutex m_synchronized;
         std::shared_ptr<Timer> m_timer;
         std::shared_ptr<Stream> m_connectedAudioStream;
         std::shared_ptr<Stream> m_connectedVideoStream;

@@ -12,7 +12,7 @@ add_executable(
 
 if (SFEMOVIE_BUILD_STATIC)
     set (SFML_STATIC_LIBRARIES TRUE)
-    find_package (SFML 2 COMPONENTS graphics window system audio REQUIRED)
+    find_package (SFML 3 COMPONENTS Graphics Window System Audio REQUIRED CONFIG)
     message(STATUS "SFML libraries: ${SFML_LIBRARIES}")
     message(STATUS "Additional dependencies: ${SFML_DEPENDENCIES}")
 
@@ -24,6 +24,10 @@ if (SFEMOVIE_BUILD_STATIC)
         ${SFEMOVIE_LIB}
         ${FFMPEG_LIBRARIES}
         ${OTHER_LIBRARIES}
+        SFML::Graphics
+        SFML::Window
+        SFML::System
+        SFML::Audio
         ${SFML_LIBRARIES}
         ${SFML_DEPENDENCIES})
 else()

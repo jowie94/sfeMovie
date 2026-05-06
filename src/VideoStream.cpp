@@ -59,13 +59,13 @@ namespace sfe
         
         // RGBA video buffer
         err = av_image_alloc(m_rgbaVideoBuffer, m_rgbaVideoLinesize,
-                             m_stream->codec->width, m_stream->codec->height,
-                             PIX_FMT_RGBA, 1);
+                             m_stream->codecpar->width, m_stream->codecpar->height,
+                             AV_PIX_FMT_RGBA, 1);
         CHECK(err >= 0, "VideoStream() - av_image_alloc() error");
         
         // SFML video frame
-        err = m_texture.create(m_stream->codec->width, m_stream->codec->height);
-        CHECK(err, "VideoStream() - sf::Texture::create() error");
+        bool tex_ok = m_texture.resize(sf::Vector2u(m_stream->codecpar->width, m_stream->codecpar->height));
+        CHECK(tex_ok, "VideoStream() - sf::Texture::resize() error");
         
         initRescaler();
     }
@@ -95,7 +95,7 @@ namespace sfe
     
     sf::Vector2i VideoStream::getFrameSize() const
     {
-        return sf::Vector2i(m_stream->codec->width, m_stream->codec->height);
+        return sf::Vector2i(m_stream->codecpar->width, m_stream->codecpar->height);
     }
     
     float VideoStream::getFrameRate() const
@@ -200,7 +200,7 @@ namespace sfe
                     // To take that into account we accumulate this time difference for reuse in getSynchronizationGap()
                     m_codecBufferingDelays.push_back(packetDuration(packet));
                     
-                    if (m_codecBufferingDelays.size() > m_stream->codec->delay)
+                    if (m_codecBufferingDelays.size() > m_codecCtx->delay)
                         m_codecBufferingDelays.pop_front();
                     
                     sfeLogDebug("Accumulated video codec time: " + s(codecBufferingDelay().asMilliseconds()) + "ms");
@@ -212,8 +212,7 @@ namespace sfe
                 }
                 else
                 {
-                    av_free_packet(packet);
-                    av_free(packet);
+                    av_packet_free(&packet);
                 }
                 
                 if (!gotFrame && goOn)
@@ -243,21 +242,22 @@ namespace sfe
     
     bool VideoStream::decodePacket(AVPacket* packet, AVFrame* outputFrame, bool& gotFrame, bool& needsMoreDecoding)
     {
-        int gotPicture = 0;
         needsMoreDecoding = false;
+        gotFrame = false;
         
-        int decodedLength = avcodec_decode_video2(m_stream->codec, outputFrame, &gotPicture, packet);
-        gotFrame = (gotPicture != 0);
+        int ret = avcodec_send_packet(m_codecCtx, packet);
+        if (ret < 0 && ret != AVERROR(EAGAIN))
+            return false;
         
-        if (decodedLength > 0 || gotFrame)
+        ret = avcodec_receive_frame(m_codecCtx, outputFrame);
+        if (ret == 0)
         {
-            if (decodedLength < packet->size)
-            {
-                needsMoreDecoding = true;
-                packet->data += decodedLength;
-                packet->size -= decodedLength;
-            }
-            
+            gotFrame = true;
+            return true;
+        }
+        else if (ret == AVERROR(EAGAIN))
+        {
+            needsMoreDecoding = true;
             return true;
         }
         else
@@ -276,8 +276,8 @@ namespace sfe
             algorithm |= SWS_ACCURATE_RND;
         }
         
-        m_swsCtx = sws_getCachedContext(nullptr, m_stream->codec->width, m_stream->codec->height, m_stream->codec->pix_fmt,
-                                        m_stream->codec->width, m_stream->codec->height, PIX_FMT_RGBA,
+        m_swsCtx = sws_getCachedContext(nullptr, m_stream->codecpar->width, m_stream->codecpar->height, (AVPixelFormat)m_stream->codecpar->format,
+                                        m_stream->codecpar->width, m_stream->codecpar->height, AV_PIX_FMT_RGBA,
                                         algorithm, nullptr, nullptr, nullptr);
         CHECK(m_swsCtx, "VideoStream::initRescaler() - sws_getContext() error");
     }
