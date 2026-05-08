@@ -1,6 +1,6 @@
 
 /*
- *  Timer.cpp
+ *  TimerBase.cpp
  *  sfeMovie project
  *
  *  Copyright (C) 2010-2015 Lucas Soltic
@@ -22,64 +22,60 @@
  *
  */
 
-#include "Timer.hpp"
 #include "Macros.hpp"
 #include "Log.hpp"
+#include <sfeMovie/TimerBase.hpp>
 
 namespace sfe
 {
-    Timer::Observer::Observer()
+    TimerBase::Observer::Observer()
     {
     }
-    
-    Timer::Observer::~Observer()
+
+    TimerBase::Observer::~Observer()
     {
     }
-    
-    void Timer::Observer::willPlay(const Timer& timer)
+
+    void TimerBase::Observer::willPlay(const TimerBase& timer)
     {
     }
-    
-    void Timer::Observer::didPlay(const Timer& timer, Status previousStatus)
+
+    void TimerBase::Observer::didPlay(const TimerBase& timer, Status previousStatus)
     {
     }
-    
-    void Timer::Observer::didPause(const Timer& timer, Status previousStatus)
+
+    void TimerBase::Observer::didPause(const TimerBase& timer, Status previousStatus)
     {
     }
-    
-    void Timer::Observer::didStop(const Timer& timer, Status previousStatus)
+
+    void TimerBase::Observer::didStop(const TimerBase& timer, Status previousStatus)
     {
     }
-    
-    bool Timer::Observer::didSeek(const Timer& timer, sf::Time oldPosition)
+
+    bool TimerBase::Observer::didSeek(const TimerBase& timer, sf::Time oldPosition)
     {
         return true;
     }
-    
-    Timer::Timer() :
-    m_pausedTime(sf::Time::Zero),
-    m_status(Stopped),
-    m_timer(),
-    m_observers()
+
+    TimerBase::~TimerBase()
     {
     }
-    
-    void Timer::addObserver(Observer& anObserver, int priority)
+
+    void TimerBase::addObserver(Observer& anObserver, int priority)
     {
-        CHECK(m_observers.find(&anObserver) == m_observers.end(), "Timer::addObserver() - cannot add the same observer twice");
-        
+        CHECK(m_observers.find(&anObserver) == m_observers.end(), "TimerBase::addObserver() - cannot add the same observer twice");
+
         m_observers.insert(std::make_pair(&anObserver, priority));
         m_observersByPriority[priority].insert(&anObserver);
     }
-    
-    void Timer::removeObserver(Observer& anObserver)
+
+    void TimerBase::removeObserver(Observer& anObserver)
     {
         std::map<Observer*, int>::iterator it = m_observers.find(&anObserver);
-        
+
         if (it == m_observers.end())
         {
-            sfeLogWarning("Timer::removeObserver() - removing an unregistered observer. Ignored.");
+            sfeLogWarning("TimerBase::removeObserver() - removing an unregistered observer. Ignored.");
         }
         else
         {
@@ -87,78 +83,60 @@ namespace sfe
             m_observers.erase(it);
         }
     }
-    
-    void Timer::play()
+
+    void TimerBase::play()
     {
-        CHECK(getStatus() != Playing, "Timer::play() - timer playing twice");
-        
+        CHECK(getStatus() != Playing, "TimerBase::play() - playing twice");
         notifyObservers(Playing);
-        
         Status oldStatus = getStatus();
         m_status = Playing;
-        m_timer.restart();
-        
+        onPlay();
         notifyObservers(oldStatus, getStatus());
     }
-    
-    void Timer::pause()
+
+    void TimerBase::pause()
     {
-        CHECK(getStatus() != Paused, "Timer::pause() - timer paused twice");
-        
+        CHECK(getStatus() != Paused, "TimerBase::pause() - paused twice");
         Status oldStatus = getStatus();
         m_status = Paused;
-        
-        if (oldStatus != Stopped)
-            m_pausedTime += m_timer.getElapsedTime();
-        
+        onPause();
         notifyObservers(oldStatus, getStatus());
     }
-    
-    void Timer::stop()
+
+    void TimerBase::stop()
     {
-        CHECK(getStatus() != Stopped, "Timer::stop() - timer stopped twice");
-        
+        CHECK(getStatus() != Stopped, "TimerBase::stop() - stopped twice");
         Status oldStatus = getStatus();
         m_status = Stopped;
-        m_pausedTime = sf::Time::Zero;
-        
+        onStop();
         notifyObservers(oldStatus, getStatus());
-        
         seek(sf::Time::Zero);
     }
-    
-    bool Timer::seek(sf::Time position)
+
+    bool TimerBase::seek(sf::Time position)
     {
         Status oldStatus = getStatus();
         sf::Time oldPosition = getOffset();
         bool couldSeek = false;
-        
+
         if (oldStatus == Playing)
             pause();
-        
-        m_pausedTime = position;
+
+        onSeek(position);
         couldSeek = notifyObservers(oldPosition);
-        
+
         if (oldStatus == Playing)
             play();
-        
+
         return couldSeek;
     }
-    
-    Status Timer::getStatus() const
+
+    Status TimerBase::getStatus() const
     {
         return m_status;
     }
-    
-    sf::Time Timer::getOffset() const
-    {
-        if (Timer::getStatus() == Playing)
-            return m_pausedTime + m_timer.getElapsedTime();
-        else
-            return m_pausedTime;
-    }
-    
-    void Timer::notifyObservers(Status futureStatus)
+
+    void TimerBase::notifyObservers(Status futureStatus)
     {
         for (std::pair<int, std::set<Observer*> >&& pairByPriority : m_observersByPriority)
         {
@@ -169,18 +147,18 @@ namespace sfe
                     case Playing:
                         observer->willPlay(*this);
                         break;
-                        
+
                     default:
-                        CHECK(false, "Timer::notifyObservers() - unhandled case in switch");
+                        CHECK(false, "TimerBase::notifyObservers() - unhandled case in switch");
                 }
             }
         }
     }
-    
-    void Timer::notifyObservers(Status oldStatus, Status newStatus)
+
+    void TimerBase::notifyObservers(Status oldStatus, Status newStatus)
     {
-        CHECK(oldStatus != newStatus, "Timer::notifyObservers() - inconsistency: no change happened");
-        
+        CHECK(oldStatus != newStatus, "TimerBase::notifyObservers() - inconsistency: no change happened");
+
         for (std::pair<int, std::set<Observer*> >&& pairByPriority : m_observersByPriority)
         {
             for (Observer* observer : pairByPriority.second)
@@ -190,11 +168,11 @@ namespace sfe
                     case Playing:
                         observer->didPlay(*this, oldStatus);
                         break;
-                        
+
                     case Paused:
                         observer->didPause(*this, oldStatus);
                         break;
-                        
+
                     case Stopped:
                         observer->didStop(*this, oldStatus);
                         break;
@@ -204,12 +182,12 @@ namespace sfe
             }
         }
     }
-    
-    bool Timer::notifyObservers(sf::Time oldPosition)
+
+    bool TimerBase::notifyObservers(sf::Time oldPosition)
     {
         CHECK(getStatus() != Playing, "inconsistency in timer");
         bool successfullSeeking = true;
-        
+
         for (std::pair<int, std::set<Observer*> >&& pairByPriority : m_observersByPriority)
         {
             for (Observer* observer : pairByPriority.second)
@@ -218,8 +196,8 @@ namespace sfe
                     successfullSeeking = false;
             }
         }
-        
+
         return successfullSeeking;
     }
-    
+
 }

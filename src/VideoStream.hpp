@@ -46,7 +46,7 @@ namespace sfe
          * to have all of its fields set and the decoder loaded
          */
         VideoStream(AVFormatContext*& formatCtx, AVStream*& stream,
-                    DataSource& dataSource, std::shared_ptr<Timer> timer, Delegate& delegate);
+                    DataSource& dataSource, std::shared_ptr<TimerBase> timer, Delegate& delegate);
         
         /** Default destructor
          */
@@ -133,7 +133,7 @@ namespace sfe
         void rescale(AVFrame* frame, uint8_t* outVideoBuffer[4], int outVideoLinesize[4]);
         
         // Timer::Observer interface
-        void willPlay(const Timer &timer) override;
+        void willPlay(const TimerBase &timer) override;
         
         /** Returns the delay caused by the FFmpeg decoder buffering
          */

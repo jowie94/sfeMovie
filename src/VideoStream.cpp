@@ -37,7 +37,7 @@ extern "C"
 namespace sfe
 {
     VideoStream::VideoStream(AVFormatContext*& formatCtx, AVStream*& stream,
-                             DataSource& dataSource, std::shared_ptr<Timer> timer, Delegate& delegate) :
+                             DataSource& dataSource, std::shared_ptr<TimerBase> timer, Delegate& delegate) :
     Stream(formatCtx ,stream, dataSource, timer),
     m_texture(),
     m_rawVideoFrame(nullptr),
@@ -288,7 +288,7 @@ namespace sfe
         sws_scale(m_swsCtx, frame->data, frame->linesize, 0, frame->height, outVideoBuffer, outVideoLinesize);
     }
     
-    void VideoStream::willPlay(const Timer &timer)
+    void VideoStream::willPlay(const TimerBase &timer)
     {
         Stream::willPlay(timer);
         if (getStatus() == Stopped)

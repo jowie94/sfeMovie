@@ -107,7 +107,7 @@ namespace sfe
         return g_availableDecoders;
     }
     
-    Demuxer::Demuxer(const std::string& sourceFile, std::shared_ptr<Timer> timer,
+    Demuxer::Demuxer(const std::string& sourceFile, std::shared_ptr<TimerBase> timer,
                      VideoStream::Delegate& videoDelegate, SubtitleStream::Delegate& subtitleDelegate) :
     m_formatCtx(nullptr),
     m_eofReached(false),
@@ -615,7 +615,7 @@ namespace sfe
         m_eofReached = false;
     }
     
-    bool Demuxer::didSeek(const Timer &timer, sf::Time oldPosition)
+    bool Demuxer::didSeek(const TimerBase &timer, sf::Time oldPosition)
     {
         resetEndOfFileStatus();
         sf::Time newPosition = timer.getOffset();

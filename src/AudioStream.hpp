@@ -41,7 +41,7 @@ namespace sfe
          * to have all of its fields set and the decoder loaded
          */
         AudioStream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource,
-                    std::shared_ptr<Timer> timer);
+                    std::shared_ptr<TimerBase> timer);
         
         /** Default destructor
          */
@@ -111,10 +111,10 @@ namespace sfe
         sf::Time samplesToTime(int nbSamples) const;
         
         // Timer::Observer interface
-        void willPlay(const Timer &timer) override;
-        void didPlay(const Timer& timer, sfe::Status previousStatus) override;
-        void didPause(const Timer& timer, sfe::Status previousStatus) override;
-        void didStop(const Timer& timer, sfe::Status previousStatus) override;
+        void willPlay(const TimerBase &timer) override;
+        void didPlay(const TimerBase& timer, sfe::Status previousStatus) override;
+        void didPause(const TimerBase& timer, sfe::Status previousStatus) override;
+        void didStop(const TimerBase& timer, sfe::Status previousStatus) override;
         
         // Public properties
         unsigned m_sampleRatePerChannel;

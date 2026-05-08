@@ -55,7 +55,7 @@ namespace sfe
     }
 
     AudioStream::AudioStream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource,
-                             std::shared_ptr<Timer> timer) :
+                             std::shared_ptr<TimerBase> timer) :
     Stream(formatCtx, stream, dataSource, timer),
     
     // Public properties
@@ -418,7 +418,7 @@ namespace sfe
         return sf::microseconds(microseconds);
     }
     
-    void AudioStream::willPlay(const Timer &timer)
+    void AudioStream::willPlay(const TimerBase &timer)
     {
         Stream::willPlay(timer);
         
@@ -443,13 +443,13 @@ namespace sfe
         }
     }
     
-    void AudioStream::didPlay(const Timer& timer, sfe::Status previousStatus)
+    void AudioStream::didPlay(const TimerBase& timer, sfe::Status previousStatus)
     {
         CHECK(SoundStream::getStatus() == sf::SoundStream::Status::Playing, "AudioStream::didPlay() - willPlay() not executed!");
         Stream::didPlay(timer, previousStatus);
     }
     
-    void AudioStream::didPause(const Timer& timer, sfe::Status previousStatus)
+    void AudioStream::didPause(const TimerBase& timer, sfe::Status previousStatus)
     {
         if (sf::SoundStream::getStatus() == sf::SoundStream::Status::Playing)
         {
@@ -460,7 +460,7 @@ namespace sfe
         Stream::didPause(timer, previousStatus);
     }
     
-    void AudioStream::didStop(const Timer& timer, sfe::Status previousStatus)
+    void AudioStream::didStop(const TimerBase& timer, sfe::Status previousStatus)
     {
         sf::SoundStream::stop();
         waitForStatusUpdate(*this, sf::SoundStream::Status::Stopped);

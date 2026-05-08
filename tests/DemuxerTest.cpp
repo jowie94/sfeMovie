@@ -4,7 +4,7 @@
 #include <boost/test/unit_test.hpp>
 #include <iostream>
 #include "Demuxer.hpp"
-#include "Timer.hpp"
+#include "DefaultTimer.hpp"
 #include "Utilities.hpp"
 #include <SFML/Audio.hpp>
 
@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(DemuxerAvailableCodecsTest)
 BOOST_AUTO_TEST_CASE(DemuxerLoadingTest)
 {
     std::shared_ptr<sfe::Demuxer> demuxer;
-    std::shared_ptr<sfe::Timer> timer = std::make_shared<sfe::Timer>();
+    std::shared_ptr<sfe::DefaultTimer> timer = std::make_shared<sfe::DefaultTimer>();
     BOOST_CHECK_THROW(demuxer = std::make_shared<sfe::Demuxer>("non-existing-file.ogv", timer, delegate, delegate), std::runtime_error);
     BOOST_CHECK_NO_THROW(demuxer = std::make_shared<sfe::Demuxer>("small_1.ogv", timer, delegate, delegate));
 	BOOST_REQUIRE(demuxer != NULL);
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(DemuxerLoadingTest)
 BOOST_AUTO_TEST_CASE(DemuxerShortOGVTest)
 {
 	std::shared_ptr<sfe::Demuxer> demuxer;
-    std::shared_ptr<sfe::Timer> timer = std::make_shared<sfe::Timer>();
+    std::shared_ptr<sfe::DefaultTimer> timer = std::make_shared<sfe::DefaultTimer>();
 	sf::Clock clock;
     demuxer = std::make_shared<sfe::Demuxer>("small_1.ogv", timer, delegate, delegate);
 	demuxer->selectFirstVideoStream();
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(DemuxerShortOGVTest)
 BOOST_AUTO_TEST_CASE(DemuxerShortWAVTest)
 {
 	std::shared_ptr<sfe::Demuxer> demuxer;
-    std::shared_ptr<sfe::Timer> timer = std::make_shared<sfe::Timer>();
+    std::shared_ptr<sfe::DefaultTimer> timer = std::make_shared<sfe::DefaultTimer>();
     demuxer = std::make_shared<sfe::Demuxer>("small_4.wav", timer, delegate, delegate);
 	demuxer->selectFirstVideoStream();
 	demuxer->selectFirstAudioStream();
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(DemuxerShortWAVTest)
 BOOST_AUTO_TEST_CASE(DemuxerLongWAVTest)
 {
     std::shared_ptr<sfe::Demuxer> demuxer;
-    std::shared_ptr<sfe::Timer> timer = std::make_shared<sfe::Timer>();
+    std::shared_ptr<sfe::DefaultTimer> timer = std::make_shared<sfe::DefaultTimer>();
 	demuxer = std::make_shared<sfe::Demuxer>("long_1.wav", timer, delegate, delegate);
 	demuxer->selectFirstVideoStream();
 	demuxer->selectFirstAudioStream();
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(DemuxerLongWAVTest)
 BOOST_AUTO_TEST_CASE(DemuxerShortMP3Test)
 {
     std::shared_ptr<sfe::Demuxer> demuxer;
-    std::shared_ptr<sfe::Timer> timer = std::make_shared<sfe::Timer>();
+    std::shared_ptr<sfe::DefaultTimer> timer = std::make_shared<sfe::DefaultTimer>();
 	// With free codecs only, the demuxer is not supposed to be able to load MP3 medias
 	
 	BOOST_CHECK_THROW(demuxer = std::make_shared<sfe::Demuxer>("small_2.mp3", timer, delegate, delegate), std::runtime_error);
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(DemuxerShortMP3Test)
 BOOST_AUTO_TEST_CASE(DemuxerShortFLACTest)
 {
     std::shared_ptr<sfe::Demuxer> demuxer;
-    std::shared_ptr<sfe::Timer> timer = std::make_shared<sfe::Timer>();
+    std::shared_ptr<sfe::DefaultTimer> timer = std::make_shared<sfe::DefaultTimer>();
 	demuxer = std::make_shared<sfe::Demuxer>("small_3.flac", timer, delegate, delegate);
 	demuxer->selectFirstVideoStream();
 	demuxer->selectFirstAudioStream();

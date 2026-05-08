@@ -30,7 +30,7 @@
 #include "AudioStream.hpp"
 #include "VideoStream.hpp"
 #include "SubtitleStream.hpp"
-#include "Timer.hpp"
+#include <sfeMovie/TimerBase.hpp>
 #include <map>
 #include <string>
 #include <set>
@@ -40,7 +40,7 @@
 
 namespace sfe
 {
-    class Demuxer : public Stream::DataSource, public Timer::Observer
+    class Demuxer : public Stream::DataSource, public TimerBase::Observer
     {
     public:
         /** Describes a demuxer
@@ -82,7 +82,7 @@ namespace sfe
          * @param timer the timer with which the media streams will be synchronized
          * @param videoDelegate the delegate that will handle the images produced by the VideoStreams
          */
-        Demuxer(const std::string& sourceFile, std::shared_ptr<Timer> timer, VideoStream::Delegate& videoDelegate, SubtitleStream::Delegate& subtitleDelegate);
+        Demuxer(const std::string& sourceFile, std::shared_ptr<TimerBase> timer, VideoStream::Delegate& videoDelegate, SubtitleStream::Delegate& subtitleDelegate);
         
         /** Default destructor
          */
@@ -254,14 +254,14 @@ namespace sfe
         void resetEndOfFileStatus() override;
         
         // Timer interface
-        bool didSeek(const Timer& timer, sf::Time oldPosition) override;
+        bool didSeek(const TimerBase& timer, sf::Time oldPosition) override;
         
         AVFormatContext* m_formatCtx;
         bool m_eofReached;
         std::map<int, std::shared_ptr<Stream> > m_streams;
         std::map<int, std::string> m_ignoredStreams;
         mutable std::recursive_mutex m_synchronized;
-        std::shared_ptr<Timer> m_timer;
+        std::shared_ptr<TimerBase> m_timer;
         std::shared_ptr<Stream> m_connectedAudioStream;
         std::shared_ptr<Stream> m_connectedVideoStream;
         std::shared_ptr<Stream> m_connectedSubtitleStream;

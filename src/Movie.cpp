@@ -23,6 +23,7 @@
  */
 
 #include <sfeMovie/Movie.hpp>
+#include <sfeMovie/TimerBase.hpp>
 #include "MovieImpl.hpp"
 
 
@@ -153,7 +154,12 @@ namespace sfe
     {
         return m_impl->getCurrentImage();
     }
-    
+
+    void Movie::setTimer(std::shared_ptr<TimerBase> timer)
+    {
+        m_impl->setTimer(timer);
+    }
+
     void Movie::draw(sf::RenderTarget& target, sf::RenderStates states) const
     {
         states.transform *= getTransform();

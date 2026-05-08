@@ -135,6 +135,10 @@ namespace sfe
          */
         bool setPlayingOffset(const sf::Time& targetSeekTime);
         
+        /** @see Movie::setTimer()
+         */
+        void setTimer(std::shared_ptr<TimerBase> timer);
+        
         /** @see Movie::getCurrentImage()
          */
         const sf::Texture& getCurrentImage() const;
@@ -149,7 +153,7 @@ namespace sfe
     private:
         sf::Transformable& m_movieView;
         std::shared_ptr<Demuxer> m_demuxer;
-        std::shared_ptr<Timer> m_timer;
+        std::shared_ptr<TimerBase> m_timer;
         sf::Texture m_emptyTexture;
         sf::Sprite m_videoSprite;
         std::list<sf::Sprite> m_subtitleSprites;

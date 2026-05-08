@@ -24,7 +24,8 @@
 
 #include "MovieImpl.hpp"
 #include "Demuxer.hpp"
-#include "Timer.hpp"
+#include "DefaultTimer.hpp"
+#include <sfeMovie/TimerBase.hpp>
 #include "Log.hpp"
 #include "Utilities.hpp"
 #include <cmath>
@@ -53,7 +54,8 @@ namespace sfe
     {
         try
         {
-            m_timer = std::make_shared<Timer>();
+            if (!m_timer)
+                m_timer = std::make_shared<DefaultTimer>();
             m_demuxer = std::make_shared<Demuxer>(filename, m_timer, *this, *this);
             m_audioStreamsDesc = m_demuxer->computeStreamDescriptors(Audio);
             m_videoStreamsDesc = m_demuxer->computeStreamDescriptors(Video);
@@ -447,7 +449,7 @@ namespace sfe
     bool MovieImpl::setPlayingOffset(const sf::Time& targetSeekTime)
     {
         bool seekingResult = false;
-        
+
         if (m_demuxer && m_timer)
         {
             if (targetSeekTime < sf::Time::Zero || targetSeekTime >= getDuration())
@@ -457,7 +459,7 @@ namespace sfe
             else
             {
                 seekingResult = m_timer->seek(targetSeekTime);
-                
+
                 if (m_timer->getStatus() == Status::Stopped)
                     pause();
             }
@@ -466,8 +468,13 @@ namespace sfe
         {
             sfeLogError("Movie - No media loaded, cannot seek");
         }
-        
+
         return seekingResult;
+    }
+
+    void MovieImpl::setTimer(std::shared_ptr<TimerBase> timer)
+    {
+        m_timer = timer;
     }
     
     const sf::Texture& MovieImpl::getCurrentImage() const

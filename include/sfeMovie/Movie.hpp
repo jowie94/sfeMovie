@@ -36,6 +36,8 @@
 
 namespace sfe
 {
+    class TimerBase;
+
     /** Constants giving the a playback status
      */
     enum Status
@@ -206,6 +208,15 @@ namespace sfe
          * @return the current image of the movie for the activated video stream
          */
         const sf::Texture& getCurrentImage() const;
+
+        /** @brief Sets a custom timer to drive playback time
+         *
+         * Must be called before openFromFile() to take effect.
+         * If not called, a DefaultTimer is created automatically.
+         *
+         * @param timer the timer to use for playback synchronization
+         */
+        void setTimer(std::shared_ptr<TimerBase> timer);
     private:
         void draw(sf::RenderTarget& Target, sf::RenderStates states) const;
         std::shared_ptr<MovieImpl> m_impl;

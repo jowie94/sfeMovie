@@ -43,7 +43,7 @@ namespace sfe
                            + "/" + avcodec_get_name(stream->codecpar->codec_id) + "' stream @ " + s(stream));
     }
     
-    Stream::Stream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource, std::shared_ptr<Timer> timer) :
+    Stream::Stream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource, std::shared_ptr<TimerBase> timer) :
     m_formatCtx(formatCtx),
     m_stream(stream),
     m_dataSource(dataSource),
@@ -270,22 +270,22 @@ namespace sfe
         m_status = status;
     }
     
-    void Stream::didPlay(const Timer& timer, Status previousStatus)
+    void Stream::didPlay(const TimerBase& timer, Status previousStatus)
     {
         setStatus(Playing);
     }
-    
-    void Stream::didPause(const Timer& timer, Status previousStatus)
+
+    void Stream::didPause(const TimerBase& timer, Status previousStatus)
     {
         setStatus(Paused);
     }
-    
-    void Stream::didStop(const Timer& timer, Status previousStatus)
+
+    void Stream::didStop(const TimerBase& timer, Status previousStatus)
     {
         setStatus(Stopped);
     }
-    
-    bool Stream::didSeek(const Timer& timer, sf::Time oldPosition)
+
+    bool Stream::didSeek(const TimerBase& timer, sf::Time oldPosition)
     {
         if (timer.getOffset() != sf::Time::Zero)
             return fastForward(timer.getOffset());

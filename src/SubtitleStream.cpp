@@ -95,7 +95,7 @@ namespace sfe
     
     const int RGBASize = 4;
     
-    SubtitleStream::SubtitleStream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource, std::shared_ptr<Timer> timer, Delegate& delegate) :
+    SubtitleStream::SubtitleStream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource, std::shared_ptr<TimerBase> timer, Delegate& delegate) :
     Stream(formatCtx, stream, dataSource, timer),
     m_delegate(delegate)
 #ifdef SFEMOVIE_ENABLE_ASS_SUBTITLES

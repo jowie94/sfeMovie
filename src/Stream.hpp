@@ -26,7 +26,7 @@
 #define SFEMOVIE_STREAM_HPP
 
 #include "Macros.hpp"
-#include "Timer.hpp"
+#include <sfeMovie/TimerBase.hpp>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -41,7 +41,7 @@ extern "C"
 
 namespace sfe
 {
-    class Stream : public Timer::Observer
+    class Stream : public TimerBase::Observer
     {
     public:
         struct DataSource
@@ -62,7 +62,7 @@ namespace sfe
          * @param stream the FFmpeg stream
          * @param dataSource the encoded data provider for this stream
          */
-        Stream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource, std::shared_ptr<Timer> timer);
+        Stream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource, std::shared_ptr<TimerBase> timer);
         
         /** Default destructor
          */
@@ -173,10 +173,10 @@ namespace sfe
         virtual bool isPassive() const;
     protected:
         // Timer::Observer interface
-        void didPlay(const Timer& timer, Status previousStatus) override;
-        void didPause(const Timer& timer, Status previousStatus) override;
-        void didStop(const Timer& timer, Status previousStatus) override;
-        bool didSeek(const Timer& timer, sf::Time oldPosition) override;
+        void didPlay(const TimerBase& timer, Status previousStatus) override;
+        void didPause(const TimerBase& timer, Status previousStatus) override;
+        void didStop(const TimerBase& timer, Status previousStatus) override;
+        bool didSeek(const TimerBase& timer, sf::Time oldPosition) override;
         
         /** @return true if any raw packet for the current stream is queued
          */
@@ -188,7 +188,7 @@ namespace sfe
         AVStream*& m_stream;
         
         DataSource& m_dataSource;
-        std::shared_ptr<Timer> m_timer;
+        std::shared_ptr<TimerBase> m_timer;
         const AVCodec* m_codec;
         AVCodecContext* m_codecCtx;
         int m_streamID;
