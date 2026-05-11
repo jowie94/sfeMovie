@@ -28,6 +28,11 @@ namespace sfe
 {
     void ExternalTimer::setExternalOffset(sf::Time offset)
     {
+        sf::Time diff = offset - m_currentOffset;
+        if (offset < m_currentOffset || diff > sf::seconds(1))
+        {
+            seek(offset);
+        }
         m_currentOffset = offset;
     }
 
