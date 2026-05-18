@@ -110,12 +110,13 @@ namespace sfe
     
     void VideoStream::update()
     {
+        std::lock_guard<std::mutex> lock(m_ffmpegMutex);
         sf::Time gap;
         bool couldComputeGap = false;
         while (getStatus() == Playing && (couldComputeGap = getSynchronizationGap(gap)) &&
                gap < sf::Time::Zero)
         {
-            if (!onGetData(m_texture))
+            if (!onGetData(&m_texture))
             {
                 setStatus(Stopped);
             }
@@ -135,19 +136,34 @@ namespace sfe
     
     void VideoStream::flushBuffers()
     {
+        std::lock_guard<std::mutex> lock(m_ffmpegMutex);
         m_codecBufferingDelays.clear();
         Stream::flushBuffers();
     }
     
     bool VideoStream::fastForward(sf::Time targetPosition)
     {
+        std::lock_guard<std::mutex> lock(m_ffmpegMutex);
         sf::Time position;
         bool couldGetPosition = false;
         
+        // Fast-skip frames without rescaling/texture update until within 0.5s of target
+        static const sf::Time kNearThreshold(sf::seconds(0.5));
+        while ((couldGetPosition = computeEncodedPosition(position)) &&
+               position + kNearThreshold < targetPosition)
+        {
+            if (! onGetData(nullptr))
+            {
+                sfeLogError("Error while fast forwarding video stream up to position " +
+                            s(targetPosition.asSeconds()) + "s");
+                return false;
+            }
+        }
+        
+        // Decode remaining frames with full processing
         while ((couldGetPosition = computeEncodedPosition(position)) && position < targetPosition)
         {
-            // We HAVE to decode the frames to get a full image when we reach the target position
-            if (! onGetData(m_texture))
+            if (! onGetData(&m_texture))
             {
                 sfeLogError("Error while fast forwarding video stream up to position " +
                             s(targetPosition.asSeconds()) + "s");
@@ -165,11 +181,12 @@ namespace sfe
     
     void VideoStream::preload()
     {
+        std::lock_guard<std::mutex> lock(m_ffmpegMutex);
         sfeLogDebug("Preload video image");
-        onGetData(m_texture);
+        onGetData(&m_texture);
     }
     
-    bool VideoStream::onGetData(sf::Texture& texture)
+    bool VideoStream::onGetData(sf::Texture* texture)
     {
         AVPacket* packet = popEncodedData();
         bool gotFrame = false;
@@ -186,10 +203,10 @@ namespace sfe
                 CHECK(packet != nullptr, "inconsistency error");
                 goOn = decodePacket(packet, m_rawVideoFrame, gotFrame, needsMoreDecoding);
                 
-                if (gotFrame)
+                if (gotFrame && texture)
                 {
                     rescale(m_rawVideoFrame, m_rgbaVideoBuffer, m_rgbaVideoLinesize);
-                    texture.update(m_rgbaVideoBuffer[0]);
+                    texture->update(m_rgbaVideoBuffer[0]);
                 }
                 
                 if (!gotFrame && goOn)

@@ -28,6 +28,7 @@
 #include "Macros.hpp"
 #include "Stream.hpp"
 #include <SFML/Graphics.hpp>
+#include <mutex>
 #include <stdint.h>
 
 namespace sfe
@@ -87,11 +88,11 @@ namespace sfe
          */
         bool fastForward(sf::Time targetPosition) override;
         
-        /** Load packets until one frame can be decoded
+    /** Load packets until one frame can be decoded
          */
         void preload();
     private:
-        bool onGetData(sf::Texture& texture);
+        bool onGetData(sf::Texture* texture);
         
         /** Returns the difference between the video stream timer and the reference timer
          *
@@ -140,6 +141,7 @@ namespace sfe
         sf::Time codecBufferingDelay() const;
         
         // Private data
+        std::mutex m_ffmpegMutex;
         sf::Texture m_texture;
         AVFrame* m_rawVideoFrame;
         uint8_t *m_rgbaVideoBuffer[4];
